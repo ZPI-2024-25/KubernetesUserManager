@@ -3,29 +3,21 @@ package main
 import (
 	"fmt"
 	"net/http"
-
-	"context"
-
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
-var clientset *kubernetes.Clientset
+var clientsetSingleton *ClientSetSingleton
 
 func main() {
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		panic(err.Error())
-	}
-
-	clientset, err = kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
 
 	fmt.Println("Starting server on port 8080...")
+
+	var err error
+	clientsetSingleton, err = GetInstance()
+
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
 
 	mux := http.NewServeMux()
 
@@ -45,61 +37,49 @@ func main() {
 }
 
 func queryPods(w http.ResponseWriter, r *http.Request) {
-	pods, err := clientset.CoreV1().Pods("").List(context.TODO(), metav1.ListOptions{})
+	pods, err := clientsetSingleton.QueryPods("default")
 	if err != nil {
-		if errors.IsNotFound(err) {
-			fmt.Fprintf(w, "Pods not found")
-		} else {
-			fmt.Fprintf(w, "Error: %s", err.Error())
-		}
+		fmt.Fprintf(w, "Error: %s", err.Error())
 		return
 	}
 
-	fmt.Fprintf(w, "Pods:\n")
+	fmt.Fprintf(w, "Pods in default namespace:\n")
 
-	for _, pod := range pods.Items {
-		fmt.Fprintf(w, "- %s\n", pod.Name)
+	for _, pod := range pods {
+		fmt.Fprintf(w, "- %s\n", pod)
 	}
 
-	fmt.Fprintf(w, "\n There are %d pods in the cluster\n", len(pods.Items))
+	fmt.Fprintf(w, "\n There are %d pods in the cluster\n", len(pods))
 }
 
 func queryDeployments(w http.ResponseWriter, r *http.Request) {
-	deployments, err := clientset.AppsV1().Deployments("").List(context.TODO(), metav1.ListOptions{})
+	deployments, err := clientsetSingleton.QueryDeployments("default")
 	if err != nil {
-		if errors.IsNotFound(err) {
-			fmt.Fprintf(w, "Deployments not found")
-		} else {
-			fmt.Fprintf(w, "Error: %s", err.Error())
-		}
+		fmt.Fprintf(w, "Error: %s", err.Error())
 		return
 	}
 
-	fmt.Fprintf(w, "Deployments:\n")
+	fmt.Fprintf(w, "Deployments in default namespace:\n")
 
-	for _, deployment := range deployments.Items {
-		fmt.Fprintf(w, "- %s\n", deployment.Name)
+	for _, deployment := range deployments {
+		fmt.Fprintf(w, "- %s\n", deployment)
 	}
 
-	fmt.Fprintf(w, "\nThere are %d deployments in the cluster\n", len(deployments.Items))
+	fmt.Fprintf(w, "\nThere are %d deployments in the cluster\n", len(deployments))
 }
 
 func queryServices(w http.ResponseWriter, r *http.Request) {
-	service, err := clientset.CoreV1().Services("").List(context.TODO(), metav1.ListOptions{})
+	service, err := clientsetSingleton.QueryServices("default")
 	if err != nil {
-		if errors.IsNotFound(err) {
-			fmt.Fprintf(w, "Services not found")
-		} else {
-			fmt.Fprintf(w, "Error: %s", err.Error())
-		}
+		fmt.Fprintf(w, "Error: %s", err.Error())
 		return
 	}
 
-	fmt.Fprintf(w, "Services:\n")
+	fmt.Fprintf(w, "Services in default namespace:\n")
 
-	for _, service := range service.Items {
-		fmt.Fprintf(w, "- %s\n", service.Name)
+	for _, service := range service {
+		fmt.Fprintf(w, "- %s\n", service)
 	}
 
-	fmt.Fprintf(w, "\nThere are %d services in the cluster\n", len(service.Items))
+	fmt.Fprintf(w, "\nThere are %d services in the cluster\n", len(service))
 }

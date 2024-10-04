@@ -2,10 +2,10 @@ FROM golang:1.22.5
 
 WORKDIR /app
 
-COPY go.mod go.sum ./
+COPY backend/go.mod backend/go.sum ./
 RUN go mod download
 
-COPY *.go ./
+COPY backend/*.go ./
 
 RUN CGO_ENABLED=0 GOOS=linux go build -o /client-go-test
 
