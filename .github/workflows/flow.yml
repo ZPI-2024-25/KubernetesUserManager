@@ -3,8 +3,16 @@ name: Go
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - 'backend/**.go'
+      - 'backend/go.mod'
+      - 'backend/go.sum'
   pull_request:
     branches: [ "main" ]
+    paths:
+      - 'backend/**.go'
+      - 'backend/go.mod'
+      - 'backend/go.sum'
 
 jobs:
   build:
@@ -26,20 +34,24 @@ jobs:
           path: |
             ~/.cache/go-build
             ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}-go-${{ hashFiles('backend/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
 
       - name: Install dependencies
+        working-directory: backend
         run: go mod download
 
       - name: Build
+        working-directory: backend
         run: go build -v ./...
 
       - name: Run tests
+        working-directory: backend
         run: go test -v ./...
 
       - name: Run linters
+        working-directory: backend
         run: |
           go install golang.org/x/lint/golint@latest
           golint ./...
