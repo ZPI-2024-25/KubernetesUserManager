@@ -9,17 +9,9 @@
 package main
 
 import (
+	sw "github.com/ZPI-2024-25/KubernetesUserManager/go/api"
 	"log"
 	"net/http"
-
-	// WARNING!
-	// Change this to a fully-qualified import path
-	// once you place this file into your project.
-	// For example,
-	//
-	//    sw "github.com/myname/myrepo/go"
-	//
-	sw "./go"
 )
 
 func main() {

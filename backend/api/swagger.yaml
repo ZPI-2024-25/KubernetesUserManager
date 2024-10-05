@@ -9,7 +9,7 @@ info:
     - [Confluence](https://samuelus.atlassian.net/wiki/spaces/ZPI/overview)
   version: 0.0.1
 servers:
-- url: http://localhost/api/v1
+- url: http://localhost:8080/api/v1
 security:
 - bearerAuth: []
 tags:
@@ -22,7 +22,7 @@ tags:
 - name: Helm Applications
   description: Operations related to Helm releases.
 paths:
-  /api/{resourceType}/{namespace}:
+  /k8s/namespaced/{resourceType}/{namespace}:
     get:
       tags:
       - Kubernetes Resources
@@ -229,7 +229,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       security:
       - bearerAuth: []
-  /api/{resourceType}/{namespace}/{resourceName}:
+  /k8s/namespaced/{resourceType}/{namespace}/{resourceName}:
     get:
       tags:
       - Kubernetes Resources
@@ -472,7 +472,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       security:
       - bearerAuth: []
-  /api/{resourceType}:
+  /k8s/non-namespaced/{resourceType}:
     get:
       tags:
       - Kubernetes Resources
@@ -638,7 +638,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       security:
       - bearerAuth: []
-  /api/{resourceType}/{resourceName}:
+  /k8s/non-namespaced/{resourceType}/{resourceName}:
     get:
       tags:
       - Kubernetes Resources
@@ -1123,7 +1123,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       security:
       - bearerAuth: []
-  /api/helm/releases:
+  /helm/releases:
     get:
       tags:
       - Helm Applications
@@ -1154,7 +1154,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       security:
       - bearerAuth: []
-  /api/helm/releases/{namespace}:
+  /helm/releases/{namespace}:
     get:
       tags:
       - Helm Applications
@@ -1244,7 +1244,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       security:
       - bearerAuth: []
-  /api/helm/releases/{namespace}/{releaseName}:
+  /helm/releases/{namespace}/{releaseName}:
     get:
       tags:
       - Helm Applications
@@ -1408,7 +1408,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       security:
       - bearerAuth: []
-  /api/helm/releases/{namespace}/{releaseName}/history:
+  /helm/releases/{namespace}/{releaseName}/history:
     get:
       tags:
       - Helm Applications
@@ -1462,7 +1462,7 @@ paths:
                 $ref: '#/components/schemas/Error'
       security:
       - bearerAuth: []
-  /api/helm/releases/{namespace}/{releaseName}/rollback:
+  /helm/releases/{namespace}/{releaseName}/rollback:
     post:
       tags:
       - Helm Applications
@@ -1538,7 +1538,8 @@ components:
           type: string
           description: Kind of the resource
         metadata:
-          $ref: '#/components/schemas/Metadata'
+          type: object
+          description: Specification of the metadata
         spec:
           type: object
           description: Specification of the resource
@@ -1547,50 +1548,11 @@ components:
           description: Current status of the resource
       description: Generic Kubernetes resource
       example:
-        metadata:
-          name: name
-          namespace: namespace
-          creationTimestamp: 2000-01-23T04:56:07.000+00:00
-          annotations:
-            key: annotations
-          labels:
-            key: labels
+        metadata: {}
         apiVersion: apiVersion
         kind: kind
         spec: {}
         status: {}
-    Metadata:
-      type: object
-      properties:
-        name:
-          type: string
-          description: Name of the resource
-        namespace:
-          type: string
-          description: Namespace of the resource
-        labels:
-          type: object
-          additionalProperties:
-            type: string
-          description: Key-value pairs for labels
-        annotations:
-          type: object
-          additionalProperties:
-            type: string
-          description: Key-value pairs for annotations
-        creationTimestamp:
-          type: string
-          description: Timestamp when the resource was created
-          format: date-time
-      description: Standard Kubernetes metadata
-      example:
-        name: name
-        namespace: namespace
-        creationTimestamp: 2000-01-23T04:56:07.000+00:00
-        annotations:
-          key: annotations
-        labels:
-          key: labels
     Error:
       type: object
       properties:
@@ -1715,16 +1677,20 @@ components:
           description: Last update timestamp
           format: date-time
         revision:
-          type: integer
+          type: string
           description: Revision number of the release
+        app_version:
+          type: string
+          description: App version of the release
       description: Helm release information
       example:
+        app_version: app_version
         name: name
         namespace: namespace
         chart: chart
         updated: 2000-01-23T04:56:07.000+00:00
         status: status
-        revision: 0
+        revision: revision
     HelmReleaseHistory:
       type: object
       properties:
@@ -1741,11 +1707,15 @@ components:
         chart:
           type: string
           description: Chart version used
+        app_version:
+          type: string
+          description: App version of the release
         description:
           type: string
           description: Description of the revision
       description: Helm release history entry
       example:
+        app_version: app_version
         description: description
         updated: 2000-01-23T04:56:07.000+00:00
         chart: chart
