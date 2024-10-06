@@ -12,6 +12,7 @@ var clientsetSingleton *common.ClientSetSingleton
 
 func main() {
 	log.Printf("Server started")
+	clientsetSingleton, _ = common.GetInstance()
 	router := sw.NewRouter()
 	log.Fatal(http.ListenAndServe(":8080", router))
 }
