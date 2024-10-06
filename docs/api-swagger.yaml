@@ -3,13 +3,15 @@ info:
   title: KubernetesUserManager - API
   description: |-
     This is a backend API server documentation for KubernetesUserManager
-    
+
     Some useful links:
     - [Jira](https://samuelus.atlassian.net/jira/software/projects/ZPI/boards/4)
     - [Confluence](https://samuelus.atlassian.net/wiki/spaces/ZPI/overview)
   version: 0.0.1
 servers:
-  - url: http://localhost/api/v1
+  - url: http://localhost:8080/api/v1
+security:
+  - bearerAuth: []
 tags:
   - name: Kubernetes Resources
     description: Operations related to Kubernetes resources.
@@ -19,30 +21,103 @@ tags:
     description: Administrative operations.
   - name: Helm Applications
     description: Operations related to Helm releases.
-security:
-  - bearerAuth: []
 paths:
-  # Namespaced Kubernetes Resources
-  /api/{resourceType}/{namespace}:
+  /k8s/namespaced/{resourceType}/{namespace}:
     get:
       tags:
         - Kubernetes Resources
       summary: List all resources in a namespace
-      description: Retrieves a list of all resources of the specified type within the given namespace.
+      description: Retrieves a list of all resources of the specified type within
+        the given namespace.
       operationId: listNamespacedResources
-      security:
-        - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/ResourceType'
-        - $ref: '#/components/parameters/Namespace'
-        - $ref: '#/components/parameters/LabelSelector'
-        - $ref: '#/components/parameters/FieldSelector'
-        - $ref: '#/components/parameters/Limit'
-        - $ref: '#/components/parameters/Continue'
-        - $ref: '#/components/parameters/SortBy'
-        - $ref: '#/components/parameters/Order'
+        - name: resourceType
+          in: path
+          description: Type of the Kubernetes resource.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+            enum:
+              - Pod
+              - Deployment
+              - ConfigMap
+              - Secret
+              - Ingress
+              - PersistentVolumeClaim
+              - ReplicaSet
+              - StatefulSet
+              - DaemonSet
+              - Job
+              - CronJob
+              - Service
+              - ServiceAccount
+        - name: namespace
+          in: path
+          description: Name of the namespace.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: labelSelector
+          in: query
+          description: Selector to filter resources by labels.
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: string
+        - name: fieldSelector
+          in: query
+          description: Selector to filter resources by fields.
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Maximum number of resources to return.
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: integer
+            format: int32
+        - name: continue
+          in: query
+          description: Token to continue listing resources from.
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: string
+        - name: sortBy
+          in: query
+          description: Field to sort the resources by.
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: string
+            enum:
+              - name
+              - creationTimestamp
+        - name: order
+          in: query
+          description: Order of sorting.
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
       responses:
-        '200':
+        "200":
           description: Successful operation
           content:
             application/json:
@@ -50,158 +125,434 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Resource'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
+                x-content-type: application/json
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
     post:
       tags:
         - Kubernetes Resources
       summary: Create a new resource
       description: Creates a new resource of the specified type in the given namespace.
       operationId: createNamespacedResource
-      security:
-        - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/ResourceType'
-        - $ref: '#/components/parameters/Namespace'
+        - name: resourceType
+          in: path
+          description: Type of the Kubernetes resource.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+            enum:
+              - Pod
+              - Deployment
+              - ConfigMap
+              - Secret
+              - Ingress
+              - PersistentVolumeClaim
+              - ReplicaSet
+              - StatefulSet
+              - DaemonSet
+              - Job
+              - CronJob
+              - Service
+              - ServiceAccount
+        - name: namespace
+          in: path
+          description: Name of the namespace.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
       requestBody:
         description: JSON object representing the resource to be created.
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/Resource'
+        required: true
       responses:
-        '201':
+        "201":
           description: Resource created successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Resource'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /api/{resourceType}/{namespace}/{resourceName}:
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
+  /k8s/namespaced/{resourceType}/{namespace}/{resourceName}:
     get:
       tags:
         - Kubernetes Resources
       summary: Get details of a specific resource
-      description: Retrieves detailed information about a specific resource within a namespace.
+      description: Retrieves detailed information about a specific resource within
+        a namespace.
       operationId: getNamespacedResource
-      security:
-        - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/ResourceType'
-        - $ref: '#/components/parameters/Namespace'
-        - $ref: '#/components/parameters/ResourceName'
+        - name: resourceType
+          in: path
+          description: Type of the Kubernetes resource.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+            enum:
+              - Pod
+              - Deployment
+              - ConfigMap
+              - Secret
+              - Ingress
+              - PersistentVolumeClaim
+              - ReplicaSet
+              - StatefulSet
+              - DaemonSet
+              - Job
+              - CronJob
+              - Service
+              - ServiceAccount
+        - name: namespace
+          in: path
+          description: Name of the namespace.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: resourceName
+          in: path
+          description: Name of the resource.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: Successful operation
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Resource'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
     put:
       tags:
         - Kubernetes Resources
       summary: Update an existing resource
       description: Updates an existing resource with new configuration or data.
       operationId: updateNamespacedResource
-      security:
-        - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/ResourceType'
-        - $ref: '#/components/parameters/Namespace'
-        - $ref: '#/components/parameters/ResourceName'
+        - name: resourceType
+          in: path
+          description: Type of the Kubernetes resource.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+            enum:
+              - Pod
+              - Deployment
+              - ConfigMap
+              - Secret
+              - Ingress
+              - PersistentVolumeClaim
+              - ReplicaSet
+              - StatefulSet
+              - DaemonSet
+              - Job
+              - CronJob
+              - Service
+              - ServiceAccount
+        - name: namespace
+          in: path
+          description: Name of the namespace.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: resourceName
+          in: path
+          description: Name of the resource.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
       requestBody:
         description: JSON object representing the updated resource.
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/Resource'
+        required: true
       responses:
-        '200':
+        "200":
           description: Resource updated successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Resource'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
     delete:
       tags:
         - Kubernetes Resources
       summary: Delete a resource
       description: Deletes the specified resource from the namespace.
       operationId: deleteNamespacedResource
-      security:
-        - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/ResourceType'
-        - $ref: '#/components/parameters/Namespace'
-        - $ref: '#/components/parameters/ResourceName'
+        - name: resourceType
+          in: path
+          description: Type of the Kubernetes resource.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+            enum:
+              - Pod
+              - Deployment
+              - ConfigMap
+              - Secret
+              - Ingress
+              - PersistentVolumeClaim
+              - ReplicaSet
+              - StatefulSet
+              - DaemonSet
+              - Job
+              - CronJob
+              - Service
+              - ServiceAccount
+        - name: namespace
+          in: path
+          description: Name of the namespace.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: resourceName
+          in: path
+          description: Name of the resource.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: Resource deleted successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Status'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  # Non-Namespaced Kubernetes Resources
-  /api/{resourceType}:
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
+  /k8s/non-namespaced/{resourceType}:
     get:
       tags:
         - Kubernetes Resources
       summary: List all resources
       description: Retrieves a list of all resources of the specified type cluster-wide.
       operationId: listClusterResources
-      security:
-        - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/ResourceTypeNonNamespaced'
-        - $ref: '#/components/parameters/LabelSelector'
-        - $ref: '#/components/parameters/FieldSelector'
-        - $ref: '#/components/parameters/Limit'
-        - $ref: '#/components/parameters/Continue'
-        - $ref: '#/components/parameters/SortBy'
-        - $ref: '#/components/parameters/Order'
+        - name: resourceType
+          in: path
+          description: Type of the non-namespaced Kubernetes resource.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+            enum:
+              - Node
+              - Namespace
+              - CustomResourceDefinition
+              - PersistentVolume
+              - StorageClass
+              - ClusterRole
+              - ClusterRoleBinding
+        - name: labelSelector
+          in: query
+          description: Selector to filter resources by labels.
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: string
+        - name: fieldSelector
+          in: query
+          description: Selector to filter resources by fields.
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Maximum number of resources to return.
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: integer
+            format: int32
+        - name: continue
+          in: query
+          description: Token to continue listing resources from.
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: string
+        - name: sortBy
+          in: query
+          description: Field to sort the resources by.
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: string
+            enum:
+              - name
+              - creationTimestamp
+        - name: order
+          in: query
+          description: Order of sorting.
+          required: false
+          style: form
+          explode: true
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
       responses:
-        '200':
+        "200":
           description: Successful operation
           content:
             application/json:
@@ -209,131 +560,284 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Resource'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+                x-content-type: application/json
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
     post:
       tags:
         - Kubernetes Resources
       summary: Create a new resource
       description: Creates a new resource of the specified type.
       operationId: createClusterResource
-      security:
-        - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/ResourceTypeNonNamespaced'
+        - name: resourceType
+          in: path
+          description: Type of the non-namespaced Kubernetes resource.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+            enum:
+              - Node
+              - Namespace
+              - CustomResourceDefinition
+              - PersistentVolume
+              - StorageClass
+              - ClusterRole
+              - ClusterRoleBinding
       requestBody:
         description: JSON object representing the resource to be created.
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/Resource'
+        required: true
       responses:
-        '201':
+        "201":
           description: Resource created successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Resource'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-
-  /api/{resourceType}/{resourceName}:
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
+  /k8s/non-namespaced/{resourceType}/{resourceName}:
     get:
       tags:
         - Kubernetes Resources
       summary: Get details of a specific resource
       description: Retrieves detailed information about a specific resource.
       operationId: getClusterResource
-      security:
-        - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/ResourceTypeNonNamespaced'
-        - $ref: '#/components/parameters/ResourceName'
+        - name: resourceType
+          in: path
+          description: Type of the non-namespaced Kubernetes resource.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+            enum:
+              - Node
+              - Namespace
+              - CustomResourceDefinition
+              - PersistentVolume
+              - StorageClass
+              - ClusterRole
+              - ClusterRoleBinding
+        - name: resourceName
+          in: path
+          description: Name of the resource.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: Successful operation
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Resource'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
     put:
       tags:
         - Kubernetes Resources
       summary: Update an existing resource
       description: Updates an existing resource with new configuration or data.
       operationId: updateClusterResource
-      security:
-        - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/ResourceTypeNonNamespaced'
-        - $ref: '#/components/parameters/ResourceName'
+        - name: resourceType
+          in: path
+          description: Type of the non-namespaced Kubernetes resource.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+            enum:
+              - Node
+              - Namespace
+              - CustomResourceDefinition
+              - PersistentVolume
+              - StorageClass
+              - ClusterRole
+              - ClusterRoleBinding
+        - name: resourceName
+          in: path
+          description: Name of the resource.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
       requestBody:
         description: JSON object representing the updated resource.
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/Resource'
+        required: true
       responses:
-        '200':
+        "200":
           description: Resource updated successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Resource'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
     delete:
       tags:
         - Kubernetes Resources
       summary: Delete a resource
       description: Deletes the specified resource from the cluster.
       operationId: deleteClusterResource
-      security:
-        - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/ResourceTypeNonNamespaced'
-        - $ref: '#/components/parameters/ResourceName'
+        - name: resourceType
+          in: path
+          description: Type of the non-namespaced Kubernetes resource.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+            enum:
+              - Node
+              - Namespace
+              - CustomResourceDefinition
+              - PersistentVolume
+              - StorageClass
+              - ClusterRole
+              - ClusterRoleBinding
+        - name: resourceName
+          in: path
+          description: Name of the resource.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: Resource deleted successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Status'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  # SSO Endpoints
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
   /auth/callback:
     post:
       tags:
@@ -341,30 +845,33 @@ paths:
       summary: Exchange authorization code for tokens
       description: Exchanges an authorization code for access and refresh tokens.
       operationId: exchangeAuthCode
-      security: []
       requestBody:
         description: Authorization code received from the authentication provider.
-        required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                code:
-                  type: string
-                  description: Authorization code.
+              $ref: '#/components/schemas/auth_callback_body'
+        required: true
       responses:
-        '200':
+        "200":
           description: Tokens issued successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthTokens'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security: []
   /auth/refresh:
     post:
       tags:
@@ -372,30 +879,33 @@ paths:
       summary: Refresh tokens
       description: Refreshes the access token using a valid refresh token.
       operationId: refreshToken
-      security: []
       requestBody:
         description: Refresh token required for generating a new access token.
-        required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                refreshToken:
-                  type: string
-                  description: Refresh token.
+              $ref: '#/components/schemas/auth_refresh_body'
+        required: true
       responses:
-        '200':
+        "200":
           description: Token refreshed successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AuthTokens'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security: []
   /auth/logout:
     post:
       tags:
@@ -403,38 +913,44 @@ paths:
       summary: Logout user
       description: Logs out the user and invalidates their session tokens.
       operationId: logoutUser
-      security:
-        - bearerAuth: []
       responses:
-        '200':
+        "200":
           description: User logged out successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Status'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
+        "401":
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
   /auth/status:
     get:
       tags:
         - SSO
       summary: Check login status
-      description: Checks whether the user is currently logged in and retrieves session details and account privileges.
+      description: Checks whether the user is currently logged in and retrieves session
+        details and account privileges.
       operationId: checkLoginStatus
-      security:
-        - bearerAuth: []
       responses:
-        '200':
+        "200":
           description: User is logged in
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserStatus'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-
-  # Admin Panel Endpoints
+        "401":
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
   /users:
     get:
       tags:
@@ -442,10 +958,8 @@ paths:
       summary: Retrieve list of users
       description: Fetches a list of all registered users.
       operationId: listUsers
-      security:
-        - bearerAuth: []
       responses:
-        '200':
+        "200":
           description: Successful operation
           content:
             application/json:
@@ -453,11 +967,21 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/User'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-
+                x-content-type: application/json
+        "401":
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
   /users/{id}:
     get:
       tags:
@@ -465,47 +989,84 @@ paths:
       summary: Retrieve details of a single user
       description: Fetches detailed information about a specific user by ID.
       operationId: getUser
-      security:
-        - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/UserId'
+        - name: id
+          in: path
+          description: Unique identifier of the user.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: Successful operation
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "401":
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
     delete:
       tags:
         - Admin Panel
       summary: Delete a user
       description: Removes a user from the system based on their ID.
       operationId: deleteUser
-      security:
-        - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/UserId'
+        - name: id
+          in: path
+          description: Unique identifier of the user.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: User deleted successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Status'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
+        "401":
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
   /users/{id}/permissions:
     put:
       tags:
@@ -513,51 +1074,64 @@ paths:
       summary: Assign or change user permissions
       description: Updates the permission levels for a specific user.
       operationId: updateUserPermissions
-      security:
-        - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/UserId'
+        - name: id
+          in: path
+          description: Unique identifier of the user.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
       requestBody:
         description: Permission levels to assign to the user.
-        required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                permissions:
-                  type: array
-                  items:
-                    type: string
-                  description: List of permissions.
+              $ref: '#/components/schemas/id_permissions_body'
+        required: true
       responses:
-        '200':
+        "200":
           description: Permissions updated successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  # Helm Application Endpoints
-  /api/helm/releases:
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
+  /helm/releases:
     get:
       tags:
         - Helm Applications
       summary: List all Helm releases
       description: Retrieves a list of all Helm releases across all namespaces.
       operationId: listHelmReleases
-      security:
-        - bearerAuth: []
       responses:
-        '200':
+        "200":
           description: Successful operation
           content:
             application/json:
@@ -565,24 +1139,39 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/HelmRelease'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-
-  /api/helm/releases/{namespace}:
+                x-content-type: application/json
+        "401":
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
+  /helm/releases/{namespace}:
     get:
       tags:
         - Helm Applications
       summary: List releases in a specific namespace
       description: Retrieves all Helm releases within the specified namespace.
       operationId: listHelmReleasesInNamespace
-      security:
-        - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/Namespace'
+        - name: namespace
+          in: path
+          description: Name of the namespace.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: Successful operation
           content:
             application/json:
@@ -590,138 +1179,261 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/HelmRelease'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
+                x-content-type: application/json
+        "401":
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
     post:
       tags:
         - Helm Applications
       summary: Install a new release
-      description: Installs a new Helm release in the specified namespace using data provided in the request body.
+      description: Installs a new Helm release in the specified namespace using data
+        provided in the request body.
       operationId: installHelmRelease
-      security:
-        - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/Namespace'
+        - name: namespace
+          in: path
+          description: Name of the namespace.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
       requestBody:
         description: Configuration data for the new Helm release.
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/HelmRelease'
+        required: true
       responses:
-        '201':
+        "201":
           description: Helm release installed successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HelmRelease'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-
-  /api/helm/releases/{namespace}/{releaseName}:
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
+  /helm/releases/{namespace}/{releaseName}:
     get:
       tags:
         - Helm Applications
       summary: Get details of a specific release
       description: Fetches detailed information about a particular Helm release.
       operationId: getHelmRelease
-      security:
-        - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/Namespace'
-        - $ref: '#/components/parameters/ReleaseName'
+        - name: namespace
+          in: path
+          description: Name of the namespace.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: releaseName
+          in: path
+          description: Name of the Helm release.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: Successful operation
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HelmRelease'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "401":
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
     put:
       tags:
         - Helm Applications
       summary: Update an existing release
       description: Updates an existing Helm release with new configuration values.
       operationId: updateHelmRelease
-      security:
-        - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/Namespace'
-        - $ref: '#/components/parameters/ReleaseName'
+        - name: namespace
+          in: path
+          description: Name of the namespace.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: releaseName
+          in: path
+          description: Name of the Helm release.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
       requestBody:
         description: Updated configuration data for the Helm release.
-        required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/HelmRelease'
+        required: true
       responses:
-        '200':
+        "200":
           description: Helm release updated successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HelmRelease'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
     delete:
       tags:
         - Helm Applications
       summary: Uninstall a release
       description: Uninstalls the specified Helm release from the namespace.
       operationId: uninstallHelmRelease
-      security:
-        - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/Namespace'
-        - $ref: '#/components/parameters/ReleaseName'
+        - name: namespace
+          in: path
+          description: Name of the namespace.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: releaseName
+          in: path
+          description: Name of the Helm release.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: Helm release uninstalled successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Status'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /api/helm/releases/{namespace}/{releaseName}/history:
+        "401":
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
+  /helm/releases/{namespace}/{releaseName}/history:
     get:
       tags:
         - Helm Applications
       summary: Get release history
       description: Retrieves the version history of the specified Helm release.
       operationId: getHelmReleaseHistory
-      security:
-        - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/Namespace'
-        - $ref: '#/components/parameters/ReleaseName'
+        - name: namespace
+          in: path
+          description: Name of the namespace.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: releaseName
+          in: path
+          description: Name of the Helm release.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
       responses:
-        '200':
+        "200":
           description: Release history retrieved successfully
           content:
             application/json:
@@ -729,173 +1441,312 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/HelmReleaseHistory'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-
-  /api/helm/releases/{namespace}/{releaseName}/rollback:
+                x-content-type: application/json
+        "401":
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
+  /helm/releases/{namespace}/{releaseName}/rollback:
     post:
       tags:
         - Helm Applications
       summary: Rollback a release
       description: Performs a rollback of the Helm release to a previous version.
       operationId: rollbackHelmRelease
-      security:
-        - bearerAuth: []
       parameters:
-        - $ref: '#/components/parameters/Namespace'
-        - $ref: '#/components/parameters/ReleaseName'
+        - name: namespace
+          in: path
+          description: Name of the namespace.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
+        - name: releaseName
+          in: path
+          description: Name of the Helm release.
+          required: true
+          style: simple
+          explode: false
+          schema:
+            type: string
       requestBody:
         description: Version number to rollback to (optional).
-        required: false
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                version:
-                  type: integer
-                  description: Version number to rollback to.
+              $ref: '#/components/schemas/releaseName_rollback_body'
+        required: false
       responses:
-        '200':
+        "200":
           description: Helm release rolled back successfully
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/HelmRelease'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Authentication failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Insufficient permissions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Resource not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - bearerAuth: []
 components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-
-  parameters:
-    ResourceType:
-      name: resourceType
-      in: path
-      required: true
-      description: Type of the Kubernetes resource.
-      schema:
-        type: string
-        enum:
-          - Pod
-          - Deployment
-          - ConfigMap
-          - Secret
-          - Ingress
-          - PersistentVolumeClaim
-          - ReplicaSet
-          - StatefulSet
-          - DaemonSet
-          - Job
-          - CronJob
-          - Service
-          - ServiceAccount
-    ResourceTypeNonNamespaced:
-      name: resourceType
-      in: path
-      required: true
-      description: Type of the non-namespaced Kubernetes resource.
-      schema:
-        type: string
-        enum:
-          - Node
-          - Namespace
-          - CustomResourceDefinition
-          - PersistentVolume
-          - StorageClass
-          - ClusterRole
-          - ClusterRoleBinding
-    Namespace:
-      name: namespace
-      in: path
-      required: true
-      description: Name of the namespace.
-      schema:
-        type: string
-    ResourceName:
-      name: resourceName
-      in: path
-      required: true
-      description: Name of the resource.
-      schema:
-        type: string
-    LabelSelector:
-      name: labelSelector
-      in: query
-      required: false
-      description: Selector to filter resources by labels.
-      schema:
-        type: string
-    FieldSelector:
-      name: fieldSelector
-      in: query
-      required: false
-      description: Selector to filter resources by fields.
-      schema:
-        type: string
-    Limit:
-      name: limit
-      in: query
-      required: false
-      description: Maximum number of resources to return.
-      schema:
-        type: integer
-        format: int32
-    Continue:
-      name: continue
-      in: query
-      required: false
-      description: Token to continue listing resources from.
-      schema:
-        type: string
-    SortBy:
-      name: sortBy
-      in: query
-      required: false
-      description: Field to sort the resources by.
-      schema:
-        type: string
-        enum:
-          - name
-          - creationTimestamp
-    Order:
-      name: order
-      in: query
-      required: false
-      description: Order of sorting.
-      schema:
-        type: string
-        enum:
-          - asc
-          - desc
-    UserId:
-      name: id
-      in: path
-      required: true
-      description: Unique identifier of the user.
-      schema:
-        type: string
-    ReleaseName:
-      name: releaseName
-      in: path
-      required: true
-      description: Name of the Helm release.
-      schema:
-        type: string
-
+  schemas:
+    Resource:
+      type: object
+      properties:
+        apiVersion:
+          type: string
+          description: API version of the resource
+        kind:
+          type: string
+          description: Kind of the resource
+        metadata:
+          type: object
+          description: Specification of the metadata
+        spec:
+          type: object
+          description: Specification of the resource
+        status:
+          type: object
+          description: Current status of the resource
+      description: Generic Kubernetes resource
+      example:
+        metadata: {}
+        apiVersion: apiVersion
+        kind: kind
+        spec: {}
+        status: {}
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: Error code
+          format: int32
+        message:
+          type: string
+          description: Error message
+        details:
+          type: object
+          description: Additional error details
+      description: Error response
+    Status:
+      type: object
+      properties:
+        status:
+          type: string
+          description: "Status of the operation (e.g., Success, Failure)"
+        message:
+          type: string
+          description: Message providing additional information
+        code:
+          type: integer
+          description: HTTP status code
+          format: int32
+      description: Status response after an operation
+      example:
+        code: 0
+        message: message
+        status: status
+    AuthTokens:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          description: JWT access token
+        refreshToken:
+          type: string
+          description: Refresh token
+        expiresIn:
+          type: integer
+          description: Access token expiration time in seconds
+          format: int32
+      description: Authentication tokens
+      example:
+        expiresIn: 0
+        accessToken: accessToken
+        refreshToken: refreshToken
+    UserStatus:
+      type: object
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        permissions:
+          type: array
+          description: List of user permissions
+          items:
+            type: string
+      description: User session details and privileges
+      example:
+        permissions:
+          - permissions
+          - permissions
+        user:
+          createdAt: 2000-01-23T04:56:07.000+00:00
+          permissions:
+            - permissions
+            - permissions
+          id: id
+          email: ""
+          username: username
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the user
+        username:
+          type: string
+          description: Username of the user
+        email:
+          type: string
+          description: Email address of the user
+          format: email
+        permissions:
+          type: array
+          description: List of user permissions
+          items:
+            type: string
+        createdAt:
+          type: string
+          description: Account creation timestamp
+          format: date-time
+      description: User information
+      example:
+        createdAt: 2000-01-23T04:56:07.000+00:00
+        permissions:
+          - permissions
+          - permissions
+        id: id
+        email: ""
+        username: username
+    HelmRelease:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the Helm release
+        namespace:
+          type: string
+          description: Namespace where the release is installed
+        chart:
+          type: string
+          description: Name and version of the Helm chart
+        status:
+          type: string
+          description: Current status of the release
+        updated:
+          type: string
+          description: Last update timestamp
+          format: date-time
+        revision:
+          type: string
+          description: Revision number of the release
+        app_version:
+          type: string
+          description: App version of the release
+      description: Helm release information
+      example:
+        app_version: app_version
+        name: name
+        namespace: namespace
+        chart: chart
+        updated: 2000-01-23T04:56:07.000+00:00
+        status: status
+        revision: revision
+    HelmReleaseHistory:
+      type: object
+      properties:
+        revision:
+          type: integer
+          description: Revision number
+        updated:
+          type: string
+          description: Update timestamp
+          format: date-time
+        status:
+          type: string
+          description: Status of the release at this revision
+        chart:
+          type: string
+          description: Chart version used
+        app_version:
+          type: string
+          description: App version of the release
+        description:
+          type: string
+          description: Description of the revision
+      description: Helm release history entry
+      example:
+        app_version: app_version
+        description: description
+        updated: 2000-01-23T04:56:07.000+00:00
+        chart: chart
+        revision: 0
+        status: status
+    auth_callback_body:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Authorization code.
+    auth_refresh_body:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+          description: Refresh token.
+    id_permissions_body:
+      type: object
+      properties:
+        permissions:
+          type: array
+          description: List of permissions.
+          items:
+            type: string
+    releaseName_rollback_body:
+      type: object
+      properties:
+        version:
+          type: integer
+          description: Version number to rollback to.
   responses:
     BadRequest:
       description: Invalid input
@@ -921,166 +1772,146 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
-
-  schemas:
-    Resource:
-      type: object
-      description: Generic Kubernetes resource
-      properties:
-        apiVersion:
-          type: string
-          description: API version of the resource
-        kind:
-          type: string
-          description: Kind of the resource
-        metadata:
-          $ref: '#/components/schemas/Metadata'
-        spec:
-          type: object
-          description: Specification of the resource
-        status:
-          type: object
-          description: Current status of the resource
-    Metadata:
-      type: object
-      description: Standard Kubernetes metadata
-      properties:
-        name:
-          type: string
-          description: Name of the resource
-        namespace:
-          type: string
-          description: Namespace of the resource
-        labels:
-          type: object
-          additionalProperties:
-            type: string
-          description: Key-value pairs for labels
-        annotations:
-          type: object
-          additionalProperties:
-            type: string
-          description: Key-value pairs for annotations
-        creationTimestamp:
-          type: string
-          format: date-time
-          description: Timestamp when the resource was created
-    Error:
-      type: object
-      description: Error response
-      properties:
-        code:
-          type: integer
-          format: int32
-          description: Error code
-        message:
-          type: string
-          description: Error message
-        details:
-          type: object
-          description: Additional error details
-    Status:
-      type: object
-      description: Status response after an operation
-      properties:
-        status:
-          type: string
-          description: Status of the operation (e.g., Success, Failure)
-        message:
-          type: string
-          description: Message providing additional information
-        code:
-          type: integer
-          format: int32
-          description: HTTP status code
-    AuthTokens:
-      type: object
-      description: Authentication tokens
-      properties:
-        accessToken:
-          type: string
-          description: JWT access token
-        refreshToken:
-          type: string
-          description: Refresh token
-        expiresIn:
-          type: integer
-          format: int32
-          description: Access token expiration time in seconds
-    UserStatus:
-      type: object
-      description: User session details and privileges
-      properties:
-        user:
-          $ref: '#/components/schemas/User'
-        permissions:
-          type: array
-          items:
-            type: string
-          description: List of user permissions
-    User:
-      type: object
-      description: User information
-      properties:
-        id:
-          type: string
-          description: Unique identifier of the user
-        username:
-          type: string
-          description: Username of the user
-        email:
-          type: string
-          format: email
-          description: Email address of the user
-        permissions:
-          type: array
-          items:
-            type: string
-          description: List of user permissions
-        createdAt:
-          type: string
-          format: date-time
-          description: Account creation timestamp
-    HelmRelease:
-      type: object
-      description: Helm release information
-      properties:
-        name:
-          type: string
-          description: Name of the Helm release
-        namespace:
-          type: string
-          description: Namespace where the release is installed
-        chart:
-          type: string
-          description: Name and version of the Helm chart
-        status:
-          type: string
-          description: Current status of the release
-        updated:
-          type: string
-          format: date-time
-          description: Last update timestamp
-        revision:
-          type: integer
-          description: Revision number of the release
-    HelmReleaseHistory:
-      type: object
-      description: Helm release history entry
-      properties:
-        revision:
-          type: integer
-          description: Revision number
-        updated:
-          type: string
-          format: date-time
-          description: Update timestamp
-        status:
-          type: string
-          description: Status of the release at this revision
-        chart:
-          type: string
-          description: Chart version used
-        description:
-          type: string
-          description: Description of the revision
+  parameters:
+    ResourceType:
+      name: resourceType
+      in: path
+      description: Type of the Kubernetes resource.
+      required: true
+      style: simple
+      explode: false
+      schema:
+        type: string
+        enum:
+          - Pod
+          - Deployment
+          - ConfigMap
+          - Secret
+          - Ingress
+          - PersistentVolumeClaim
+          - ReplicaSet
+          - StatefulSet
+          - DaemonSet
+          - Job
+          - CronJob
+          - Service
+          - ServiceAccount
+    ResourceTypeNonNamespaced:
+      name: resourceType
+      in: path
+      description: Type of the non-namespaced Kubernetes resource.
+      required: true
+      style: simple
+      explode: false
+      schema:
+        type: string
+        enum:
+          - Node
+          - Namespace
+          - CustomResourceDefinition
+          - PersistentVolume
+          - StorageClass
+          - ClusterRole
+          - ClusterRoleBinding
+    Namespace:
+      name: namespace
+      in: path
+      description: Name of the namespace.
+      required: true
+      style: simple
+      explode: false
+      schema:
+        type: string
+    ResourceName:
+      name: resourceName
+      in: path
+      description: Name of the resource.
+      required: true
+      style: simple
+      explode: false
+      schema:
+        type: string
+    LabelSelector:
+      name: labelSelector
+      in: query
+      description: Selector to filter resources by labels.
+      required: false
+      style: form
+      explode: true
+      schema:
+        type: string
+    FieldSelector:
+      name: fieldSelector
+      in: query
+      description: Selector to filter resources by fields.
+      required: false
+      style: form
+      explode: true
+      schema:
+        type: string
+    Limit:
+      name: limit
+      in: query
+      description: Maximum number of resources to return.
+      required: false
+      style: form
+      explode: true
+      schema:
+        type: integer
+        format: int32
+    Continue:
+      name: continue
+      in: query
+      description: Token to continue listing resources from.
+      required: false
+      style: form
+      explode: true
+      schema:
+        type: string
+    SortBy:
+      name: sortBy
+      in: query
+      description: Field to sort the resources by.
+      required: false
+      style: form
+      explode: true
+      schema:
+        type: string
+        enum:
+          - name
+          - creationTimestamp
+    Order:
+      name: order
+      in: query
+      description: Order of sorting.
+      required: false
+      style: form
+      explode: true
+      schema:
+        type: string
+        enum:
+          - asc
+          - desc
+    UserId:
+      name: id
+      in: path
+      description: Unique identifier of the user.
+      required: true
+      style: simple
+      explode: false
+      schema:
+        type: string
+    ReleaseName:
+      name: releaseName
+      in: path
+      description: Name of the Helm release.
+      required: true
+      style: simple
+      explode: false
+      schema:
+        type: string
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
