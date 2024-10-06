@@ -1,10 +1,11 @@
-module client-go-test
+module github.com/ZPI-2024-25/KubernetesUserManager
 
 go 1.22.5
 
 require (
 	k8s.io/apimachinery v0.31.1
 	k8s.io/client-go v0.31.1
+	github.com/gorilla/mux v1.8.1
 )
 
 require (

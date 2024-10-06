@@ -2,39 +2,26 @@ package main
 
 import (
 	"fmt"
+	sw "github.com/ZPI-2024-25/KubernetesUserManager/go/api"
+	"github.com/ZPI-2024-25/KubernetesUserManager/go/common"
+	"log"
 	"net/http"
 )
 
-var clientsetSingleton *ClientSetSingleton
+var clientsetSingleton *common.ClientSetSingleton
 
 func main() {
-
-	fmt.Println("Starting server on port 8080...")
-
-	var err error
-	clientsetSingleton, err = GetInstance()
-
-	if err != nil {
-		fmt.Println(err.Error())
-		return
-	}
-
-	mux := http.NewServeMux()
-
-	mux.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "API Server is running")
-	}))
-
-	mux.HandleFunc("/pods", queryPods)
-
-	mux.HandleFunc("/deployments", queryDeployments)
-
-	mux.HandleFunc("/services", queryServices)
-
-	if err := http.ListenAndServe(":8080", mux); err != nil {
-		fmt.Println(err.Error())
-	}
+	log.Printf("Server started")
+	clientsetSingleton, _ = common.GetInstance()
+	router := sw.NewRouter()
+	log.Fatal(http.ListenAndServe(":8080", router))
 }
+
+/*
+	TODO
+    This code should be removed as well as deploy folder and Deployment Instructions.md when logic under api endpoints
+    is implemented.
+*/
 
 func queryPods(w http.ResponseWriter, r *http.Request) {
 	pods, err := clientsetSingleton.QueryPods("default")
