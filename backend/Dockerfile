@@ -3,11 +3,11 @@ FROM golang:1.22 AS build
 WORKDIR /app
 
 # Copy go.mod and go.sum to download dependencies
-COPY go.mod go.sum ./
+COPY ../../../Users/mrsha/Downloads/backend/backend/go.mod go.sum ./
 RUN go mod download
 
 # Copy the source code
-COPY go ./go
+COPY ../../../Users/mrsha/Downloads/backend/backend/go ./go
 COPY main.go .
 
 # Build the Go application

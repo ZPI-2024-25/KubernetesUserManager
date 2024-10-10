@@ -9,6 +9,7 @@
 package api
 
 import (
+	"github.com/ZPI-2024-25/KubernetesUserManager/go/controllers"
 	"net/http"
 )
 
@@ -33,23 +34,19 @@ func DeleteNamespacedResource(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetClusterResource(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
+	controllers.GetClusterResourceController(w, r)
 }
 
 func GetNamespacedResource(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
+	controllers.GetNamespacedResourceController(w, r)
 }
 
 func ListClusterResources(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
+	controllers.ListClusterResourcesController(w, r)
 }
 
 func ListNamespacedResources(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
-	w.WriteHeader(http.StatusOK)
+	controllers.ListNamespacedResourcesController(w, r)
 }
 
 func UpdateClusterResource(w http.ResponseWriter, r *http.Request) {
